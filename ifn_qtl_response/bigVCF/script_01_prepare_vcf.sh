@@ -83,7 +83,7 @@ fi
 tabix -p vcf "$temp_filled"
 
 # Step 2: Apply genotype count filters (all individuals >= 3)
-if ! bcftools view -i 'AC_Hom>=6 && AC_Het>=3 && (AN/2 - AC_Hom/2 - AC_Het)>=3' \
+if ! bcftools view -i 'AC_Hom>=6 && AC_Het>=3 && AN >= AC_Hom + 2*AC_Het + 6' \
      "$temp_filled" -o "$temp_vcf"; then
     echo "Error: bcftools genotype filtering failed"
     rm -f "$temp_filled" "${temp_filled}.tbi"
@@ -99,6 +99,8 @@ echo "Variants removed: $((variant_count_before - variant_count_after))"
 
 mv "$temp_vcf" "$filtered_vcf"
 
+
+bcftools query -f '%CHROM\t%POS\t%AC_Hom\t%AC_Het\t%AN\n' ${filtered_vcf} | head -20 > genotype_filter_check.txt
 
 
 # VCF hwe correction
