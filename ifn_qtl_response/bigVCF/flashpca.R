@@ -64,33 +64,16 @@ if (!inherits(f2, "try-error") && is.list(f2) && !is.null(f2$vectors)) {
     # Calculate variance explained
     var_explained <- f2$values^2 / sum(f2$values^2) * 100
 
-    elbow_data <- data.frame(
-      PC = paste0("PC", 1:length(var_explained)),
-      Variance = var_explained,
-      PC_num = 1:length(var_explained)
-    )
-
-    elbow_plot <- ggplot(elbow_data, aes(x = PC_num, y = Variance)) +
-      geom_line(color = "blue", size = 1) +
-      geom_point(color = "blue", size = 3) +
-      labs(
-        title = "PCA Elbow Plot",
-        x = "Principal Component",
-        y = "Variance Explained (%)"
-      ) +
-      theme_minimal() +
-      theme(
-        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-        axis.text.x = element_text(angle = 0)
-      ) +
-      scale_x_continuous(breaks = 1:length(var_explained))
-
-    ggsave("VCF_PCs_elbow.png", plot = elbow_plot, width = 8, height = 6)
-    cat("Elbow plot saved to VCF_PCs_elbow.png\n")
-
-    # Print variance explained
-    cat("\nVariance explained by each PC:\n")
-    print(elbow_data)
+    sdev <- sqrt(f2$values)
+    pdf("VCF_genexPC_plot.pdf")
+    sdev_sorted <- sort(sdev, decreasing = TRUE)
+    findPC(sdev = sdev_sorted, figure = TRUE)
+    dev.off()
+    
+    p <- findPC(sdev = sdev_sorted)
+    n_pcs <- as.numeric(p)
+    
+    cat("\nOptimal number of PCs (determined by findPC):", n_pcs, "\n")
   } else {
     cat("Warning: Eigenvalues not available for elbow plot\n")
   }
@@ -104,5 +87,3 @@ a <- read.table("PCs.pca", header = TRUE, row.names = 1)
 pca_t <- as.data.frame(t(as.matrix(a)))
 pca_t$SampleID <- rownames(pca_t)
 
-plot <- ggpairs(pca_t, columns = grep("^PC", names(pca_t)))
-ggsave("VCF_PCs.png", plot = plot, width = 8, height = 8)
