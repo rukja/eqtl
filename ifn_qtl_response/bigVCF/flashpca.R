@@ -4,6 +4,7 @@ library(data.table)
 library(dplyr)
 library(flashpcaR)
 library(GGally)
+library(findPC)
 
 # Get command line arguments
 args <- commandArgs(trailingOnly = TRUE)
@@ -63,14 +64,19 @@ if (!inherits(f2, "try-error") && is.list(f2) && !is.null(f2$vectors)) {
   if (!is.null(f2$values)) {
     # Calculate variance explained
     var_explained <- f2$values^2 / sum(f2$values^2) * 100
+    
 
     sdev <- sqrt(f2$values)
     pdf("VCF_genexPC_plot.pdf")
     sdev_sorted <- sort(sdev, decreasing = TRUE)
-    findPC(sdev = sdev_sorted, figure = TRUE)
+    max_pcs <- length(sdev_sorted)
+    search_range <- min(max_pcs, 50)
+    findPC(sdev = sdev_sorted, number = search_range, figure = TRUE)
     dev.off()
+
+    print(search_range)
     
-    p <- findPC(sdev = sdev_sorted)
+    p <- findPC(sdev = sdev_sorted, number = search_range)
     n_pcs <- as.numeric(p)
     
     cat("\nOptimal number of PCs (determined by findPC):", n_pcs, "\n")
