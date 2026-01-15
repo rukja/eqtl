@@ -71,7 +71,7 @@ echo "Variants before genotype filtering: $variant_count_before"
 # VCF subset based on patients with gene expression and MAF frequency
 temp_filled="${vcf_base}.filled.vcf.gz"
 
-# Step 1: Subset samples and apply MAF filter
+#Subset samples and apply MAF filter
 if ! bcftools view -S sample_names.txt "$my_vcf" | \
      bcftools view -i "MAF[0]>=$MAF" | \
      bcftools +fill-tags -Oz -o "$temp_filled" -- -t AC_Hom,AC_Het,AN; then
@@ -82,22 +82,38 @@ fi
 # Index the temporary file
 tabix -p vcf "$temp_filled"
 
-# Step 2: Apply genotype count filters (all individuals >= 3)
-if ! bcftools view -i 'AC_Hom>=6 && AC_Het>=3 && AN >= AC_Hom + 2*AC_Het + 6' \
-     "$temp_filled" -o "$temp_vcf"; then
-    echo "Error: bcftools genotype filtering failed"
+sample_count=$(wc -l < sample_names.txt)
+echo "Number of samples: $sample_count"
+
+# Only require 3 of each genotype if we have enough samples
+MIN_SAMPLES=50  # Adjust as needed
+
+if [ "$sample_count" -ge "$MIN_SAMPLES" ]; then
+    echo "Applying genotype filtering (sufficient samples: $sample_count)..."
+    if ! bcftools view -i 'AC_Hom>=6 && AC_Het>=3 && AN >= AC_Hom + 2*AC_Het + 6' "$temp_filled" -o "$temp_vcf"; then
+        echo "Error: bcftools genotype filtering failed"
+        rm -f "$temp_filled" "${temp_filled}.tbi"
+        exit 1
+    fi
+
+    variant_count_after=$(bcftools view -H "$temp_vcf" | wc -l)
+    echo "Variants after genotype filtering: $variant_count_after"
+    echo "Variants removed: $((variant_count_before - variant_count_after))"
+
+    mv "$temp_vcf" "$filtered_vcf"
+    # Clean up temporary file
     rm -f "$temp_filled" "${temp_filled}.tbi"
-    exit 1
+
+else
+    echo "Skipping genotype filtering (insufficient samples: $sample_count)"
+    bcftools view "$temp_filled" -o "$filtered_vcf"
+
+    rm -f "$temp_filled" "${temp_filled}.tbi"
+
+    variant_count_after=$(bcftools view -H "$filtered_vcf" | wc -l)
+    echo "Variants after genotype filtering: $variant_count_after"
+    echo "Variants removed: $((variant_count_before - variant_count_after))"
 fi
-
-# Clean up temporary file
-rm -f "$temp_filled" "${temp_filled}.tbi"
-
-variant_count_after=$(bcftools view -H "$temp_vcf" | wc -l)
-echo "Variants after genotype filtering: $variant_count_after"
-echo "Variants removed: $((variant_count_before - variant_count_after))"
-
-mv "$temp_vcf" "$filtered_vcf"
 
 
 bcftools query -f '%CHROM\t%POS\t%AC_Hom\t%AC_Het\t%AN\n' ${filtered_vcf} | head -20 > genotype_filter_check.txt

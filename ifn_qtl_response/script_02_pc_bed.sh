@@ -11,9 +11,9 @@
 set -e
 
 # Check for input file parameter
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 input_file.txt number_of_genotype_PCs path_to_vcf"
-    echo "Where input_file.txt contains one .bed.gz filename per line"
+if [ "$#" -ne 4 ]; then
+    echo "Usage: $0 input_file.txt number_of_genotype_PCs path_to_vcf covariate_inclusion"
+    echo "Where input_file.txt contains one .bed.gz filename per line, and covariate_inclusion refers to whether the custom covariate fill should be included (Y or N)"
     exit 1
 fi
 
@@ -26,12 +26,29 @@ if [ ! -f "$INPUT_FILE" ]; then
 fi
 
 vcf_pcs="$2"
+
+
+# Check if vcf pcs are valid integers
+
+re='^[0-9]+$'
+if ! [[ $vcf_pcs =~ $re ]] ; then
+   echo "Error: Provided VCF PCs, ${vcf_pcs} is not an integer"
+   exit 1
+fi
+
 my_vcf="$3"
+inclusion="$4"
 
 
-# Check if input file exists
+# Check if vcf file exists
 if [ ! -f "$my_vcf" ]; then
-    echo "Error: Input file '$my_vcf' not found"
+    echo "Error: VCF file '$my_vcf' not found"
+    exit 1
+fi
+
+# Check if inclusion is valid
+if [ "${inclusion}" != "Y" ] && [ "${inclusion}" != "N" ]; then
+    echo "Error: information about covariate inclusion not present"
     exit 1
 fi
 
@@ -85,7 +102,7 @@ while IFS= read -r bed_file; do
     /usr/bin/time -v apptainer exec $H2_CONTAINER_LOC/h2-rstudio_4.4.0.sif Rscript ./calculate_pcs.R \
         "${my_bed}" \
         "${output_directory}/genes.corrected" \
-        > ./hoffman_log_Rscripts/output.$JOB_ID 2>&1
+        > ./hoffman_log_Rscripts/find_pc_bed_log.$JOB_ID 2>&1
 
     # Create covariate file
     (head -n 1 "${vcf_directory}/PCs.pca"  && tail -n +2 "${vcf_directory}/PCs.pca"  | head -n ${vcf_pcs}) > "${vcf_directory}/PCs_selected.pca"
@@ -96,6 +113,7 @@ while IFS= read -r bed_file; do
         "${vcf_directory}/PCs_selected.pca"  \
         "./covariates.txt" \
         "${output_directory}/genes.corrected.pca" \
+        "${inclusion}" \
         ${cov_file} \
         > ./hoffman_log_Rscripts/merge_pcs_output.$JOB_ID 2>&1
 

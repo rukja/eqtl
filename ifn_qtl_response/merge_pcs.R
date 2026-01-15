@@ -1,13 +1,14 @@
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) != 4) {
-  stop("Usage: Rscript merge_covariates.R file1.txt file2.txt file3.txt output.txt")
+if (length(args) != 5) {
+  stop("Usage: Rscript merge_covariates.R file1.txt file2.txt file3.txt inclusion output.txt")
 }
 
 # Inputs
 file1 <- args[1]
 file2 <- args[2]
 file3 <- args[3]
-outfile <- args[4]
+inclusion_df2 <- args[4]
+outfile <- args[5]
 
 # Read files
 df1 <- read.table(file1, header = TRUE, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)
@@ -31,7 +32,13 @@ df2_ordered <- df2[, reorder_columns(df2, common_samples), drop = FALSE]
 df3_ordered <- df3[, reorder_columns(df3, common_samples), drop = FALSE]
 
 # Merge rows by stacking them (keeping header consistent)
-merged_df <- rbind(df1_ordered, df2_ordered, df3_ordered[-1,])
+
+if (inclusion_df2 == "Y") {
+  merged_df <- rbind(df1_ordered, df2_ordered, df3_ordered[-1,])
+} else {
+  merged_df <- rbind(df1_ordered, df3_ordered[-1,])
+}
+
 
 
 rownames(merged_df) <- merged_df[[1]]

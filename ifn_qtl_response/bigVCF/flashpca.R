@@ -63,7 +63,9 @@ if (!inherits(f2, "try-error") && is.list(f2) && !is.null(f2$vectors)) {
 
   if (!is.null(f2$values)) {
     # Calculate variance explained
-    var_explained <- f2$values^2 / sum(f2$values^2) * 100
+    var_explained <- f2$values / sum(f2$values)
+
+    cum_var <- cumsum(var_explained)
     
 
     sdev <- sqrt(f2$values)
@@ -78,6 +80,20 @@ if (!inherits(f2, "try-error") && is.list(f2) && !is.null(f2$vectors)) {
     
     p <- findPC(sdev = sdev_sorted, number = search_range)
     n_pcs <- as.numeric(p)
+
+    #Create a summary table
+    pca_summary <- data.frame(
+      PC = 1:max_pcs,
+      Standard_Deviation = sdev_sorted,
+      Proportion_of_Variance = var_explained,
+      Cumulative_Proportion = cum_var
+    )
+
+    write.table(pca_summary, file=paste0("VCF", ".pca_summary.tsv"),
+            quote=FALSE, sep="\t", row.names=FALSE)
+
+
+
     
     cat("\nOptimal number of PCs (determined by findPC):", n_pcs, "\n")
   } else {

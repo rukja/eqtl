@@ -11,9 +11,9 @@
 set -e
 
 # Check for input file parameter
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 input_file.txt vcf_name.hwe.vcf.gz"
-    echo "Where input_file.txt contains one .bed.gz filename per line and vcf_name.hwe.vcf.gz is the path to the VCF"
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 input_file.txt vcf_name.hwe.vcf.gz vcf_pcs"
+    echo "Where input_file.txt contains one .bed.gz filename per line, vcf_name.hwe.vcf.gz is the path to the VCF, and vcf_pcs contains the number of PCs to correct in the VCF"
     exit 1
 fi
 
@@ -27,11 +27,21 @@ if [ ! -f "$INPUT_FILE" ]; then
     exit 1
 fi
 
-# Check if input file exists
+# Check if VCF file exists
 if [ ! -f "$my_vcf" ]; then
-    echo "Error: Input file '$my_vcf' not found"
+    echo "Error: VCF file '$my_vcf' not found"
     exit 1
 fi
+
+# Check if vcf pcs are valid integers
+vcf_pcs="$3"
+re='^[0-9]+$'
+if ! [[ $vcf_pcs =~ $re ]] ; then
+   echo "Error: Provided VCF PCs, ${vcf_pcs} is not an integer"
+   exit 1
+fi
+
+
 
 pwd
 . /u/local/Modules/default/init/modules.sh
@@ -80,10 +90,11 @@ while IFS= read -r bed_file; do
     total_lines=$(wc -l < "$cov_file")
     num_pcs_available=$((total_lines - 1))
     # Iterate and perform analyses
-    for num_pcs in $(seq 1 ${num_pcs_available}); do
-        echo "Testing with ${num_pcs} PCs..."
+    for num_pcs in $(seq ${vcf_pcs} ${num_pcs_available}); do
+        num_other_pcs=$((num_pcs - vcf_pcs))
+        echo "Testing with ${vcf_pcs} VCF PCs + ${num_other_pcs} bed PCs (${num_pcs} total)..."
 
-        # Create a covariates file with only the first N PCs
+        # Create a covariates file with only the first N additional PCs
         head -n 1 ${cov_file} > ${output_directory}/genes.corrected.${num_pcs}pcs.pca
         awk -v n=${num_pcs} 'NR > 1 && NR <= n+1' ${cov_file} >> ${output_directory}/genes.corrected.${num_pcs}pcs.pca
 

@@ -89,3 +89,21 @@ lines <- readLines(paste0(output_prefix, ".pca"))
 lines[1] <- paste("SampleID", lines[1], sep = "\t")
 writeLines(lines, paste0(output_prefix, ".pca"))
 
+
+
+#Calculate variance metrics
+var_explained <- pca_result$sdev^2 / sum(pca_result$sdev^2)
+cum_var <- cumsum(var_explained)
+
+#Create a summary table
+pca_summary <- data.frame(
+  PC = 1:length(pca_result$sdev),
+  Standard_Deviation = pca_result$sdev,
+  Proportion_of_Variance = var_explained,
+  Cumulative_Proportion = cum_var
+)
+
+#Save it as a TSV
+write.table(pca_summary, file=paste0(output_prefix, ".pca_summary.tsv"),
+            quote=FALSE, sep="\t", row.names=FALSE)
+
