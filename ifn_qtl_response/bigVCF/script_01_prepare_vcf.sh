@@ -129,6 +129,9 @@ cat pre_filter_check.imiss
 echo "Variant missingness rates summary:"
 cat pre_filter_check.lmiss | head -20
 
+mkdir -p downstream_ld_output
+
+
 # Apply filtering in PLINK:
 # - HWE p-value threshold 1e-6
 # - Remove variants with >=5% missingness (--geno 0.05)
@@ -138,10 +141,10 @@ plink --bfile "${filtered_vcf}_plink" \
   --geno 0.05 \
   --mind 0.10 \
   --mac 14 \
-  --make-bed --out "${hwe_vcf}_plink_filtered"
+  --make-bed --out "downstream_ld_output/${hwe_vcf}_plink_filtered"
 
   # Convert filtered PLINK files back to VCF
-plink --bfile "${hwe_vcf}_plink_filtered" --recode vcf-iid --out "${hwe_vcf}"
+plink --bfile "downstream_ld_output/${hwe_vcf}_plink_filtered" --recode vcf-iid --out "${hwe_vcf}"
 
 # Compress the final VCF
 bgzip -f "${hwe_vcf}.vcf"

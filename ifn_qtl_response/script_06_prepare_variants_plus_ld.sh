@@ -49,7 +49,9 @@ echo "There are $(wc -l < reGenes.txt) reGenes"
 
 echo "Running LD per gene..."
 
-echo "gene,SNP_A,SNP_B,R2" > ${OUTPUT_PRE}_ALL_LD.csv
+echo "gene,snpA,bpA,snpB,bpB,r2" > ${OUTPUT_PRE}_ALL_LD.csv
+
+echo "gene,snp,bp" > ${OUTPUT_PRE}_ALL_SNPPOS.csv
 
 while read g; do
 
@@ -67,19 +69,25 @@ while read g; do
     fi
 
     # Run LD
+
+
     plink \
         --bfile ./bigVCF/downstream_ld_output/${PLINK_PRE} \
         --extract ${g}_snps.txt \
-        --r2 \
+        --r2 square \
         --ld-window 99999 \
         --ld-window-kb 1000 \
         --ld-window-r2 0 \
-        --out ${OUTPUT_PRE}_${g}_LD
+        --threads 3 \
+        --out ${OUTPUT_PRE}_${g}_LD_square
 
-    awk -v gene="$g" 'NR>1 {print gene","$3","$6","$7}' \
-    ${OUTPUT_PRE}_${g}_LD.ld >> ${OUTPUT_PRE}_ALL_LD.csv
+    awk -v gene="$g" 'NR>1 {print gene","$2","$3","$5","$6","$7}' \
+    ${OUTPUT_PRE}_${g}_LD_square.ld >> ${OUTPUT_PRE}_ALL_LD.csv
 
-    rm ${OUTPUT_PRE}_${g}_LD.*
+    awk 'NR==FNR{s[$1];next} $2 in s {print gene","$2","$4}' gene="$g" ${g}_snps.txt \
+    ./bigVCF/downstream_ld_output/${PLINK_PRE}.bim >> ${OUTPUT_PRE}_ALL_SNPPOS.csv
+
+    rm ${OUTPUT_PRE}_${g}_LD_square*
 
     rm ${g}_snps.txt
 
