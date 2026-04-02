@@ -41,6 +41,12 @@ echo "There are $(wc -l < conditional_top_variants.txt) independent conditional 
 
 awk 'NR>1 {print $8, "chr"$2}' conditionals_full.txt > variants.txt
 
+sed -i 's/chr23/chrX/g' variants.txt
+
+awk 'NR>1 {print $8, "chr"$2}' conditional_top_variants.txt > independent_variants.txt
+
+sed -i 's/chr23/chrX/g' independent_variants.txt
+
 awk 'NR>1 {print $1}' conditional_top_variants.txt | sort -u > reGenes.txt
 
 echo "There are $(wc -l < reGenes.txt) reGenes"

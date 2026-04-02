@@ -46,8 +46,8 @@ cov_file="pca_bed_output_${PERMUTATION_CONDITION}/${PERMUTATION_CONDITION}_optim
 for num in {1..22} X; do
 
 
-    QTLtools cis --vcf "chr${num}/chr${num}.vcf.gz" --bed "chr${num}/${PERMUTATION_CONDITION}_chr${num}.bed.gz" --cov ${cov_file} --window 10000 --mapping "${PERMUTATION_CONDITION}_permutation_dir/thresholds.thresholds.txt" --out "chr${num}/header_conditional_pass_${num}.txt" --chunk 0 1
-    QTLtools cis --vcf "chr${num}/chr${num}.vcf.gz" --bed "chr${num}/${PERMUTATION_CONDITION}_chr${num}.bed.gz" --cov ${cov_file} --window 10000 --mapping "${PERMUTATION_CONDITION}_permutation_dir/thresholds.thresholds.txt" --out "chr${num}/data_conditional_pass_${num}.txt" --chunk 1 1
+    QTLtools cis --vcf "chr${num}/chr${num}.vcf.gz" --bed "chr${num}/${PERMUTATION_CONDITION}_chr${num}.bed.gz" --cov ${cov_file} --std-err --window 10000 --mapping "${PERMUTATION_CONDITION}_permutation_dir/thresholds.thresholds.txt" --out "chr${num}/header_conditional_pass_${num}.txt" --chunk 0 1
+    QTLtools cis --vcf "chr${num}/chr${num}.vcf.gz" --bed "chr${num}/${PERMUTATION_CONDITION}_chr${num}.bed.gz" --cov ${cov_file} --std-err --window 10000 --mapping "${PERMUTATION_CONDITION}_permutation_dir/thresholds.thresholds.txt" --out "chr${num}/data_conditional_pass_${num}.txt" --chunk 1 1
 
 
     cat "chr${num}/header_conditional_pass_${num}.txt" "chr${num}/data_conditional_pass_${num}.txt" > "chr${num}/chr${num}_conditionals.txt"
