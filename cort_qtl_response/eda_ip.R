@@ -1,7 +1,7 @@
 args <- commandArgs(trailingOnly = TRUE)
 if(length(args) != 1)  stop("Incorrect number of arguments")
 
-opt_input  <- args[1]
+opt_input  <- args[1] #opt_input is "./conditionals_full.txt"
 temp <- read.table(opt_input,nrows = 1)
 
 header <- FALSE
@@ -48,6 +48,40 @@ ggplot(D_ranks, aes(x = as.factor(bwd_best_hit), y = slope_rank)) +
 ggplot(D_ranks, aes(x = as.factor(bwd_best_hit), y = score)) +
   geom_boxplot()
 
+## Annotation
+
+# Reformat
+
+variants_to_annotate <- D %>%
+  dplyr::select(var_id, var_chr, var_from, var_to, phe_id, fwd_pval, fwd_slope, phe_strd) %>%
+  distinct(var_id, .keep_all = TRUE) %>%
+  mutate(chr_pos = paste0("chr", var_chr, ":", var_from)) %>%
+  arrange(fwd_pval)
+
+write.table(variants_to_annotate[, c("var_id", "chr_pos", "var_from", "var_to")],
+            "variants_for_annotation.txt", 
+            quote=FALSE, row.names=FALSE, col.names=FALSE, sep="\t")
 
 
+# Perform annotation
 
+library(VariantAnnotation)
+library(biomaRt)
+
+#ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+
+# Create GRanges from variants
+variant_gr <- GRanges(
+  seqnames = paste0("chr", variants_to_annotate$var_chr),
+  ranges = IRanges(start = variants_to_annotate$var_from, 
+                   end = variants_to_annotate$var_to),
+  strand = variants_to_annotate$phe_strd, 
+  variant_id = variants_to_annotate$var_id,
+  gene = variants_to_annotate$phe_id
+)
+
+BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
+
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+g.overlap_features <- IRanges:findOverlaps(variant_gr, genes(txdb), single.strand.genes.only=FALSE)
